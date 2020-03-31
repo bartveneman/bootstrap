@@ -1,0 +1,45 @@
+name: CSS Diff
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  run:
+    name: CSS Diff
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+
+      - name: Set Node.js version
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+
+      - run: node --version
+      - run: npm --version
+      - run: java -version
+
+      - name: Set up npm cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-v${{ matrix.node }}-${{ hashFiles('package.json') }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('.github/workflows/css-diff.yml') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-v${{ matrix.node }}-${{ hashFiles('package.json') }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('.github/workflows/css-diff.yml') }}
+            ${{ runner.OS }}-node-v${{ matrix.node }}-
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Generate dist CSS files
+        run: npm run css
+
+      - name: Comment CSS Diff to PR
+        uses: projectwallace/css-diff-action@master
+        with:
+          project-wallace-token: ${{ secrets.PROJECT_WALLACE_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          css-path: ./dist/css/bootstrap.min.css
